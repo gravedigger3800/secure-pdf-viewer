@@ -1,0 +1,5 @@
+{
+  "name": "SecureView PDF MVP",
+  "description": "A secure, ephemeral PDF sharing tool designed for testing secure viewer concepts. Features time-limited access, watermarking, and download protection.",
+  "requestFramePermissions": []
+}
