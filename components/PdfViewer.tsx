@@ -1,78 +1,79 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { Loader2, AlertTriangle, EyeOff, ShieldCheck } from 'lucide-react';
 import { usePageVisibility, useSecurityMeasures } from '../utils/security';
 import { Watermark } from './Watermark';
 import { PdfViewerProps } from '../types';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
 
-// Set up the worker for PDF.js
-pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+// Configure PDF.js worker from CDN
+pdfjs.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`;
 
 const PdfViewer: React.FC<PdfViewerProps> = ({ file, fileName, expiresAt }) => {
-  const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageWidth, setPageWidth] = useState(window.innerWidth > 800 ? 800 : window.innerWidth - 40);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [error, setError] = useState<string | null>(null);
+  const [pageWidth, setPageWidth] = useState(Math.min(window.innerWidth - 40, 800));
   const isVisible = usePageVisibility();
 
-  // Enable security event listeners
   useSecurityMeasures();
 
-  // Resize handler
   useEffect(() => {
     const handleResize = () => {
-      const containerWidth = document.getElementById('pdf-container')?.clientWidth || window.innerWidth;
-      setPageWidth(Math.min(containerWidth - 32, 800)); // Max width 800px, with padding
+      setPageWidth(Math.min(window.innerWidth - 40, 800));
     };
-
     window.addEventListener('resize', handleResize);
-    handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
+  const onLoadSuccess = ({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
-  }
+    setError(null);
+  };
 
-  const getTimeString = () => new Date().toLocaleString();
+  const onLoadError = (err: Error) => {
+    console.error('PDF load error:', err);
+    setError(err.message || 'Failed to load PDF');
+  };
 
-  // Security Pause Screen
+  // Security pause when tab is not visible
   if (!isVisible) {
     return (
-      <div className="fixed inset-0 bg-brand-edge z-[100] flex flex-col items-center justify-center text-white">
-        <div className="p-6 bg-brand-card rounded-2xl border border-brand-border flex flex-col items-center shadow-2xl">
-          <EyeOff size={48} className="mb-4 text-brand-warning" />
-          <h2 className="text-xl font-bold mb-1">Security Pause</h2>
-          <p className="text-brand-muted text-sm">Document hidden while tab is inactive.</p>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900">
+        <div className="text-center p-8 bg-slate-800 rounded-2xl border border-slate-700">
+          <EyeOff size={48} className="mx-auto mb-4 text-yellow-500" />
+          <h2 className="text-xl font-bold text-white mb-2">Security Pause</h2>
+          <p className="text-slate-400">Document hidden while tab is inactive.</p>
         </div>
       </div>
     );
   }
 
+  // Use CORS proxy for cross-origin PDFs
+  const corsProxy = 'https://corsproxy.io/?';
+  const pdfUrl = typeof file === 'string' ? corsProxy + encodeURIComponent(file) : file;
+
   return (
     <div
-      className="relative min-h-screen bg-brand-bg flex flex-col items-center pt-6 pb-20 select-none"
+      className="min-h-screen bg-slate-900 flex flex-col items-center py-6 select-none"
       onContextMenu={(e) => e.preventDefault()}
     >
-      {/* Dynamic Watermark Layer */}
-      <Watermark text={`CONFIDENTIAL • ${getTimeString()} • VIEW ONLY`} />
+      {/* Watermark */}
+      <Watermark text={`CONFIDENTIAL • ${new Date().toLocaleString()} • VIEW ONLY`} />
 
-      {/* Viewer Header */}
+      {/* Header Bar */}
       <div className="w-full max-w-4xl px-4 mb-6 z-10">
-        <div className="flex justify-between items-center bg-brand-card/80 backdrop-blur border border-brand-border p-4 rounded-xl shadow-lg">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 bg-brand-primary/10 rounded-lg flex items-center justify-center shrink-0">
-              <ShieldCheck className="text-brand-primary" size={20} />
-            </div>
-            <div className="min-w-0">
-              <h1 className="text-brand-text font-semibold truncate text-sm sm:text-base">{fileName}</h1>
-              <p className="text-brand-success text-xs flex items-center gap-1.5 font-medium">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-success animate-pulse"></span>
-                Secure Viewing Session
-              </p>
+        <div className="flex justify-between items-center bg-slate-800 border border-slate-700 p-4 rounded-xl">
+          <div className="flex items-center gap-3">
+            <ShieldCheck className="text-blue-500" size={24} />
+            <div>
+              <h1 className="text-white font-semibold">{fileName}</h1>
+              <p className="text-green-400 text-xs">● Secure Viewing Session</p>
             </div>
           </div>
-          <div className="text-right pl-4 shrink-0">
-            <p className="text-brand-warning text-xs font-mono font-bold">EXPIRES IN</p>
-            <p className="text-brand-text font-mono text-lg font-bold leading-none">
+          <div className="text-right">
+            <p className="text-orange-400 text-xs font-mono">EXPIRES IN</p>
+            <p className="text-white font-mono text-lg font-bold">
               {Math.max(0, Math.floor((expiresAt - Date.now()) / 60000))}m
             </p>
           </div>
@@ -80,49 +81,50 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file, fileName, expiresAt }) => {
       </div>
 
       {/* PDF Container */}
-      <div id="pdf-container" className="relative w-full max-w-4xl px-4 z-10">
-        <div className="bg-brand-edge rounded-lg shadow-2xl overflow-hidden border border-brand-border min-h-[500px] relative">
+      <div className="w-full max-w-4xl px-4 z-10">
+        <div className="bg-slate-800 rounded-lg border border-slate-700 p-4 min-h-[500px] relative">
 
-          {/* Transparent overlay to block drag/drop and clicks */}
-          <div className="absolute inset-0 z-20" />
+          {/* Overlay to prevent interactions */}
+          <div className="absolute inset-0 z-20 pointer-events-none" />
 
-          <Document
-            file={file}
-            onLoadSuccess={onDocumentLoadSuccess}
-            loading={
-              <div className="flex flex-col items-center justify-center h-96 text-brand-muted">
-                <Loader2 className="animate-spin mb-4 text-brand-primary" size={40} />
-                <p className="text-sm font-medium">Decrypting & rendering...</p>
-              </div>
-            }
-            error={
-              <div className="flex flex-col items-center justify-center h-96 text-red-400">
-                <AlertTriangle size={40} className="mb-4" />
-                <p>Unable to load document.</p>
-                <p className="text-xs text-brand-muted mt-2">Check internet connection or CORS settings.</p>
-              </div>
-            }
-            className="flex flex-col items-center bg-brand-edge p-4 md:p-8"
-          >
-            {Array.from(new Array(numPages), (el, index) => (
-              <div key={`page_${index + 1}`} className="my-2 relative shadow-lg">
-                {/* Render Page */}
-                <Page
-                  pageNumber={index + 1}
-                  width={pageWidth}
-                  renderTextLayer={false} // Disable text selection
-                  renderAnnotationLayer={false} // Disable links
-                  className="border border-brand-border"
-                />
-              </div>
-            ))}
-          </Document>
+          {error ? (
+            <div className="flex flex-col items-center justify-center h-96 text-red-400">
+              <AlertTriangle size={48} className="mb-4" />
+              <p className="text-lg font-medium">Unable to load document</p>
+              <p className="text-sm text-slate-400 mt-2 max-w-md text-center">{error}</p>
+            </div>
+          ) : (
+            <Document
+              file={pdfUrl}
+              onLoadSuccess={onLoadSuccess}
+              onLoadError={onLoadError}
+              loading={
+                <div className="flex flex-col items-center justify-center h-96 text-slate-400">
+                  <Loader2 className="animate-spin mb-4 text-blue-500" size={48} />
+                  <p>Loading document...</p>
+                </div>
+              }
+              className="flex flex-col items-center"
+            >
+              {numPages > 0 && Array.from({ length: numPages }, (_, i) => (
+                <div key={i} className="my-4 shadow-xl">
+                  <Page
+                    pageNumber={i + 1}
+                    width={pageWidth}
+                    renderTextLayer={false}
+                    renderAnnotationLayer={false}
+                    className="border border-slate-600"
+                  />
+                </div>
+              ))}
+            </Document>
+          )}
         </div>
       </div>
 
-      <div className="mt-8 text-brand-muted text-[10px] uppercase tracking-widest text-center max-w-md opacity-50">
+      <p className="mt-8 text-slate-500 text-xs uppercase tracking-widest">
         Protected by SecureView
-      </div>
+      </p>
     </div>
   );
 };

@@ -1,58 +1,66 @@
 import React, { useState } from 'react';
-import { Clock, Link as LinkIcon, Check, AlertCircle, Globe, Info } from 'lucide-react';
+import { Clock, Link as LinkIcon, Check, AlertCircle, Upload, FileText } from 'lucide-react';
 import { Layout } from './Layout';
+import { supabase } from '../services/supabaseClient';
 
 const AdminPanel: React.FC = () => {
-  const [externalUrl, setExternalUrl] = useState<string>('');
+  const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [generatedLink, setGeneratedLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const selectedFile = e.target.files[0];
+      if (selectedFile.type !== 'application/pdf') {
+        setError('Please select a valid PDF file.');
+        return;
+      }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError('File size limit is 10MB.');
+        return;
+      }
+      setFile(selectedFile);
+      setError(null);
+      setGeneratedLink(null);
+    }
+  };
+
   const handleGenerateLink = async () => {
     setLoading(true);
     setError(null);
+    if (!file) return;
 
     try {
+      // 1. Upload to Supabase
+      const fileName = `${Date.now()}_${file.name.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+      const { error: uploadError } = await supabase.storage
+        .from('documents')
+        .upload(fileName, file);
+
+      if (uploadError) throw uploadError;
+
+      // 2. Get Public URL
+      const { data } = supabase.storage
+        .from('documents')
+        .getPublicUrl(fileName);
+
+      const publicUrl = data.publicUrl;
+
+      // 3. Generate Secure Link
       const expiresAt = Date.now() + 60 * 60 * 1000; // 1 Hour
       const baseUrl = window.location.href.split('#')[0];
-      let link = '';
 
-      // External URL Mode
-      if (!externalUrl) {
-        setError("Please enter a valid URL");
-        setLoading(false);
-        return;
-      }
+      const encodedUrl = encodeURIComponent(publicUrl);
+      const name = encodeURIComponent(file.name);
 
-      // Basic validation
-      try {
-        new URL(externalUrl);
-      } catch (e) {
-        setError("Please enter a valid URL (e.g., https://example.com/file.pdf)");
-        setLoading(false);
-        return;
-      }
-
-      // Encode URL
-      const encodedUrl = encodeURIComponent(externalUrl);
-      // Extract filename from URL if possible, else default
-      let fileName = "Secure Document";
-      try {
-        const urlObj = new URL(externalUrl);
-        const parts = urlObj.pathname.split('/');
-        const lastPart = parts[parts.length - 1];
-        if (lastPart && lastPart.toLowerCase().endsWith('.pdf')) {
-          fileName = decodeURIComponent(lastPart);
-        }
-      } catch (e) { }
-
-      const name = encodeURIComponent(fileName);
-      link = `${baseUrl}#/view?url=${encodedUrl}&name=${name}&exp=${expiresAt}`;
+      const link = `${baseUrl}#/view?url=${encodedUrl}&name=${name}&exp=${expiresAt}`;
 
       setGeneratedLink(link);
     } catch (err: any) {
-      setError(err.message || 'Failed to generate secure link');
+      console.error(err);
+      setError(err.message || 'Failed to upload and generate link');
     } finally {
       setLoading(false);
     }
@@ -73,35 +81,32 @@ const AdminPanel: React.FC = () => {
 
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold mb-2 text-white">Create Secure Access Link</h1>
-            <p className="text-brand-muted">Generate a time-limited (1-hour), view-only link for any PDF.</p>
+            <p className="text-brand-muted">Upload a PDF to generate a time-limited (1-hour), view-only link.</p>
           </div>
 
           <div className="space-y-6">
-            {/* URL INPUT */}
-            <div className="space-y-4">
-              <div className="bg-brand-edge/50 border border-brand-border p-4 rounded-lg flex gap-3 text-xs text-brand-muted">
-                <Info size={16} className="shrink-0 mt-0.5 text-brand-primary" />
-                <p>
-                  <strong>How it works:</strong> Paste a direct link to a PDF hosted anywhere (your website, CDN, or a public storage bucket).
-                  SecureView wraps it in a protected viewer that disables downloading and printing.
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-brand-muted uppercase tracking-wider">Document Source URL</label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-3.5 text-brand-muted" size={16} />
-                  <input
-                    type="url"
-                    placeholder="https://example.com/documents/brochure.pdf"
-                    value={externalUrl}
-                    onChange={(e) => setExternalUrl(e.target.value)}
-                    className="w-full pl-10 bg-brand-edge border border-brand-border rounded-lg px-4 py-3 text-sm text-brand-text focus:outline-none focus:border-brand-primary/50 placeholder:text-brand-muted/50"
-                  />
-                </div>
-                <p className="text-[10px] text-brand-muted/70">
-                  * Ensure your server allows cross-origin (CORS) requests so the secure viewer can render the file.
-                </p>
+            {/* FILE UPLOAD */}
+            <div className="relative group">
+              <input
+                type="file"
+                accept=".pdf"
+                onChange={handleFileChange}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+              />
+              <div className={`border-2 border-dashed rounded-xl p-8 text-center transition-all duration-200 ${file ? 'border-brand-primary bg-brand-primary/5' : 'border-brand-border hover:border-brand-muted hover:bg-brand-edge'}`}>
+                {file ? (
+                  <div className="flex items-center justify-center gap-3 text-brand-primary">
+                    <FileText size={24} />
+                    <span className="font-medium truncate">{file.name}</span>
+                  </div>
+                ) : (
+                  <div className="text-brand-muted">
+                    <Upload size={32} className="mx-auto mb-3 opacity-50" />
+                    <p className="font-medium text-brand-text">Drop PDF here or click to browse</p>
+                    <p className="text-xs mt-2 text-slate-500">Max 10MB</p>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -114,14 +119,14 @@ const AdminPanel: React.FC = () => {
 
             <button
               onClick={handleGenerateLink}
-              disabled={!externalUrl || loading}
-              className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${loading || !externalUrl
-                  ? 'bg-brand-border text-brand-muted cursor-not-allowed'
-                  : 'bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/25'
+              disabled={!file || loading}
+              className={`w-full py-3.5 rounded-xl font-semibold flex items-center justify-center gap-2 transition-all ${loading || !file
+                ? 'bg-brand-border text-brand-muted cursor-not-allowed'
+                : 'bg-brand-primary hover:bg-brand-primaryHover text-white shadow-lg shadow-brand-primary/25'
                 }`}
             >
               {loading ? (
-                <>Generating...</>
+                <>Uploading & Generating...</>
               ) : (
                 <>
                   <Clock size={18} />
