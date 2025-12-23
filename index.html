@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SecureView PDF</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- 
+      TAILWIND CDN: 
+      Added for the web preview to work immediately. 
+      When you move to a real IDE (VS Code), you can remove these script tags 
+      and rely on the 'npm run dev' build process instead.
+    -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: {
+                bg: '#0B1220',      /* Deep Navy Main */
+                card: '#0F172A',    /* Slate 900 */
+                edge: '#020617',    /* Slate 950 Footer/Nav */
+                primary: '#2563EB', /* Trusty Blue */
+                primaryHover: '#1D4ED8',
+                text: '#E5E7EB',    /* Gray 200 */
+                muted: '#94A3B8',   /* Slate 400 */
+                border: '#1E293B',  /* Slate 800 */
+                success: '#22C55E',
+                warning: '#F59E0B'
+              }
+            },
+            fontFamily: {
+              sans: ['Inter', 'sans-serif'],
+            }
+          },
+        },
+      }
+    </script>
+
+    <style>
+      /* Global Print Protection */
+      @media print {
+        body {
+          display: none !important;
+        }
+      }
+      /* Disable Selection Globally */
+      body {
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        user-select: none;
+        background-color: #0B1220; /* brand-bg */
+        color: #E5E7EB; /* brand-text */
+      }
+    </style>
+
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react-pdf": "https://esm.sh/react-pdf@^10.2.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "@vitejs/plugin-react": "https://esm.sh/@vitejs/plugin-react@^5.1.2",
+    "vite": "https://esm.sh/vite@^7.3.0"
+  }
+}
+</script>
+  <script type="module" crossorigin src="./assets/index-D_ZlalHs.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-0yULmPNw.css">
+</head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
