@@ -121,9 +121,15 @@ const PdfViewer: React.FC<PdfViewerProps> = ({ file, fileName, expiresAt }) => {
           )}
         </div>
       </div>
+      {/* Security Warning */}
+      <div className="mt-8 max-w-2xl px-4 text-center">
+        <p className="text-red-400/80 text-xs leading-relaxed">
+          ⚠️ This system actively monitors all activity. Screenshot attempts, screen recording, or link sharing are logged with IP address and device data. Misuse may result in account blocking and legal consequences.
+        </p>
+      </div>
 
-      <p className="mt-8 text-slate-500 text-xs uppercase tracking-widest">
-        Protected by SecureView
+      <p className="mt-4 text-slate-500 text-xs uppercase tracking-widest">
+        Protected by Applicator Pdf
       </p>
     </div>
   );

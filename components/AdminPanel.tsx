@@ -49,7 +49,7 @@ const AdminPanel: React.FC = () => {
       const publicUrl = data.publicUrl;
 
       // 3. Generate Secure Link
-      const expiresAt = Date.now() + 60 * 60 * 1000; // 1 Hour
+      const expiresAt = Date.now() + 105 * 60 * 1000; // 1 Hour 45 Minutes
       const baseUrl = window.location.href.split('#')[0];
 
       const encodedUrl = encodeURIComponent(publicUrl);
@@ -81,7 +81,7 @@ const AdminPanel: React.FC = () => {
 
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-bold mb-2 text-white">Create Secure Access Link</h1>
-            <p className="text-brand-muted">Upload a PDF to generate a time-limited (1-hour), view-only link.</p>
+            <p className="text-brand-muted">Upload a PDF to generate a time-limited (1h 45min), view-only link.</p>
           </div>
 
           <div className="space-y-6">

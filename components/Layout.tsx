@@ -17,7 +17,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
               <div className="w-8 h-8 bg-brand-primary rounded-lg flex items-center justify-center shadow-lg shadow-brand-primary/20">
                 <ShieldCheck className="text-white" size={20} />
               </div>
-              <span className="font-bold text-lg tracking-tight">SecureView</span>
+              <span className="font-bold text-lg tracking-tight">Applicator Pdf</span>
             </div>
             <div className="flex items-center gap-4 text-xs font-medium text-brand-muted">
               <span className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-brand-card border border-brand-border">
@@ -39,7 +39,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, showNav = true }) => {
         <footer className="border-t border-brand-border bg-brand-edge py-8 mt-auto">
           <div className="max-w-7xl mx-auto px-4 text-center">
             <p className="text-brand-muted text-sm mb-2">
-              SecureView • Enterprise-Grade Document Protection
+              Applicator Pdf • Enterprise-Grade Document Protection
             </p>
             <div className="flex justify-center gap-4 text-xs text-slate-500">
               <span>No Cookies</span>
